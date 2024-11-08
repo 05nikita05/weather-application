@@ -5,22 +5,28 @@ import './App.css'; // For additional custom styles
 
 const App = () => {
   const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null); // Track selected day
 
   const API_KEY = "221a8418b41846ad80d195258241210";
+  // const API_KEY = "38ce168706f66e4168663236ab92cc51"
 
   const getWeather = async (e) => {
     e.preventDefault();
+
     try {
+      const query = country ? `${city}, ${country}` : city; // Include country if selected
+
       const currentWeatherResponse = await axios.get(
-        `http://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${city}&aqi=no`
+        `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${query}&aqi=no`
       );
       setWeather(currentWeatherResponse.data);
-
+console.log(currentWeatherResponse.data)
       const forecastResponse = await axios.get(
-        `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${city}&days=4`
+        `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${query}&days=4`
       );
       setForecast(forecastResponse.data.forecast.forecastday);
       setSelectedDay(null); // Reset selected day on new search
@@ -31,17 +37,45 @@ const App = () => {
 
   const getBackgroundStyle = () => {
     if (!weather) return 'bg-gradient-to-b from-gray-900 to-gray-700';
+    
     const condition = weather.current.condition.text.toLowerCase();
-    if (condition.includes('sunny')) return 'bg-gradient-to-b from-yellow-300 to-orange-600';
-    if (condition.includes('rain')) return 'bg-gradient-to-b from-gray-400 to-blue-800';
-    if (condition.includes('cloud')) return 'bg-gradient-to-b from-gray-500 to-gray-700';
-    return 'bg-gradient-to-b from-blue-900 to-blue-600';
+    const localTime = new Date(weather.location.localtime); // Get local time of the location
+    const hour = localTime.getHours();
+    const isDaytime = hour >= 6 && hour < 18; // Daytime from 6 AM to 6 PM
+  
+    if (isDaytime) {
+      // Daytime styles based on weather condition
+      if (condition.includes('sunny') || condition.includes('clear')) 
+        return 'bg-gradient-to-b from-yellow-300 to-orange-500';
+      if (condition.includes('cloud')) 
+        return 'bg-gradient-to-b from-gray-300 to-gray-600';
+      if (condition.includes('rain')) 
+        return 'bg-gradient-to-b from-blue-400 to-blue-800';
+      if (condition.includes('snow')) 
+        return 'bg-gradient-to-b from-gray-100 to-blue-300';
+      return 'bg-gradient-to-b from-blue-200 to-blue-500'; // Default for other conditions during the day
+    } else {
+      // Nighttime styles based on weather condition
+      if (condition.includes('clear')) 
+        return 'bg-gradient-to-b from-indigo-900 to-blue-900';
+      if (condition.includes('cloud')) 
+        return 'bg-gradient-to-b from-gray-700 to-gray-900';
+      if (condition.includes('rain')) 
+        return 'bg-gradient-to-b from-gray-800 to-blue-900';
+      if (condition.includes('snow')) 
+        return 'bg-gradient-to-b from-gray-300 to-gray-700';
+      return 'bg-gradient-to-b from-black to-gray-800'; // Default for other conditions at night
+    }
   };
+  
 
+  // Define card colors based on weather condition
   const getCardColorStyle = (condition) => {
-    if (condition.includes('sunny')) return 'bg-yellow-400/90';
+    condition = condition.toLowerCase();
+    if (condition.includes('sunny') || condition.includes('clear')) return 'bg-yellow-400/90';
     if (condition.includes('rain')) return 'bg-blue-800/90';
     if (condition.includes('cloud')) return 'bg-gray-700/90';
+    if (condition.includes('snow')) return 'bg-blue-400/90';
     return 'bg-blue-600/90';
   };
 
@@ -50,16 +84,40 @@ const App = () => {
       <h1 className="text-4xl font-bold mb-8 text-center">Weather Forecast App</h1>
 
       {/* Search Input */}
-      <form onSubmit={getWeather} className="flex w-full max-w-lg shadow-lg">
-        <input
-          type="text"
-          placeholder="Enter city"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="flex-grow p-3 rounded-l-lg border-none outline-none text-black"
-        />
-        <button type="submit" className="px-6 bg-blue-700 rounded-r-lg font-semibold">Search</button>
-      </form>
+      <form onSubmit={getWeather} className="flex flex-wrap w-full max-w-lg bg-white rounded-lg shadow-lg">
+  <input
+    type="text"
+    placeholder="Enter city"
+    value={city}
+    onChange={(e) => setCity(e.target.value)}
+    className="flex-1 p-3 rounded-l border border-gray-300 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
+  />
+  <select
+    value={country}
+    onChange={(e) => setCountry(e.target.value)}
+    className="  border-t sm:border-l border-gray-300 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    <option value="">country</option>
+    <option value="US">United States</option>
+    <option value="UK">United Kingdom</option>
+    <option value="Canada">Canada</option>
+    <option value="Australia">Australia</option>
+    <option value="India">India</option>
+    <option value="Germany">Germany</option>
+    <option value="France">France</option>
+    <option value="China">China</option>
+    <option value="Japan">Japan</option>
+    <option value="Brazil">Brazil</option>
+    <option value="South Africa">South Africa</option>
+  </select>
+  <button
+    type="submit"
+    className="flex-grow sm:flex-none sm:w-auto px-6 py-3 bg-blue-700 text-white font-semibold rounded-b-lg sm:rounded-r-lg sm:rounded-b-none hover:bg-blue-800 transition duration-300"
+  >
+    Search
+  </button>
+</form>
+
 
       {/* Current or Selected Day Weather */}
       <AnimatePresence>
@@ -71,7 +129,7 @@ const App = () => {
             exit={{ opacity: 0, y: 50 }}
             transition={{ duration: 0.5 }}
             className="mt-10 w-full max-w-md bg-opacity-90 rounded-2xl p-6 shadow-lg"
-            style={{ backgroundColor: getCardColorStyle(weather.current.condition.text.toLowerCase()) }}
+            style={{ backgroundColor: getCardColorStyle(weather.current.condition.text) }}
           >
             <div className="flex justify-between items-center">
               <div>
@@ -165,7 +223,7 @@ const App = () => {
               </div>
               <div className="text-center">
                 <p className="text-lg">{selectedDay.day.daily_chance_of_rain}%</p>
-                <p className="text-sm">Rain Chance</p>
+                <p className="text-sm">Chance of Rain</p>
               </div>
             </div>
           </motion.div>
