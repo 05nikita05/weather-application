@@ -20,7 +20,7 @@ const App = () => {
       setWeather(currentWeatherResponse.data);
 
       const forecastResponse = await axios.get(
-        `http://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${city}&days=4`
+        `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${city}&days=4`
       );
       setForecast(forecastResponse.data.forecast.forecastday);
       setSelectedDay(null); // Reset selected day on new search
